@@ -1,20 +1,21 @@
 
 module signal(clk, s1,s2,s3,IR,ENA,ENB,IN1,IN2,IN3,IN4);
 input clk,s1,s2,s3,IR;
-output ENA,ENB,IN1,IN2,IN3,IN4;
-
-reg [3:0] state=4'b0000;
-always@(posedge clk)
+output reg ENA,ENB,IN1,IN2,IN3,IN4;
 
 initial begin //make sure everything is clear
-    ENA=0;
-    ENB=0;
+    ENA=1'b0;
+    ENB=1'b0;
 
     IN1=0;
     IN2=0;
     IN3=0;
     IN4=0;
 end
+
+reg [3:0] state=4'b0000;
+
+always@(posedge clk)begin
 
 case (state)
     4'b0000: begin  //S0 only job is to transfer to correct next state
@@ -164,13 +165,16 @@ case (state)
     end
 endcase
 
+end
+
 endmodule
 
 
 
 module TB;
-    reg s1=5,s2=0,s3=0,IR=0,clk=0;
-    signal signal_TB(clk, s1,s2,s3,IR);
+    reg s1=0,s2=0,s3=0,IR=0,clk=0;
+    wire ENA,ENB,IN1,IN2,IN3,IN4;
+    signal signal_TB(clk, s1,s2,s3,IR,ENA,ENB,IN1,IN2,IN3,IN4);
     always begin
         clk=~clk;
         #5;
@@ -179,6 +183,18 @@ module TB;
     initial begin
         $dumpvars(0,TB);
         $dumpfile("ball_finding_TB.vcd");
+
+        s1=1;
+        #5;
+        s2=1;
+        #5;
+        s3=1;
+        #5;
+        IR=1;
+        s1=0;
+        #5;
+        s3=0;
+        #5;
 
         #40;
         $finish;
