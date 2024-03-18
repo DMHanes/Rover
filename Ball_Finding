@@ -1,9 +1,20 @@
 
-module signal(clk, s1,s2,s3,IR);
+module signal(clk, s1,s2,s3,IR,ENA,ENB,IN1,IN2,IN3,IN4);
 input clk,s1,s2,s3,IR;
+output ENA,ENB,IN1,IN2,IN3,IN4;
 
 reg [3:0] state=4'b0000;
 always@(posedge clk)
+
+initial begin //make sure everything is clear
+    ENA=0;
+    ENB=0;
+
+    IN1=0;
+    IN2=0;
+    IN3=0;
+    IN4=0;
+end
 
 case (state)
     4'b0000: begin  //S0 only job is to transfer to correct next state
@@ -22,10 +33,20 @@ case (state)
 
     4'b0001: begin   //Go towards sensor 1 if signal is stronger
         if (s1>s2)begin
+            ENA=1;
+            ENB=1;
+            IN2=1;
+            IN4=1;
             state <= 4'b0001;
         end
         else if (s1==s2)begin   //when equal STOP
             state <= 4'b0011;
+            ENA=0;
+            ENB=0;
+            IN1=0;
+            IN2=0;
+            IN3=0;
+            IN4=0;
         end
         //else if (s2>s1)begin
          //   state <= 3'b010;
@@ -33,54 +54,113 @@ case (state)
 
     4'b0010: begin   //go towards sensor 2 if signal is stronger
         if (s2>s1)begin
+            ENA=1;
+            ENB=1;
+            IN1=1;
+            IN3=1;
             state <= 4'b0010;
         end
         else if (s2==s1)begin   //go to stop state when equal
             state <= 4'b0011;
+            ENA=0;
+            ENB=0;
+            IN1=0;
+            IN2=0;
+            IN3=0;
+            IN4=0;
         end
     end
 
     4'b0011: begin   //STOP
+        ENA=0;
+        ENB=0;
+        IN1=0;
+        IN2=0;
+        IN3=0;
+        IN4=0;
         state <= 4'b0100;
     end
     
     4'b0100: begin //TURN
-        if (s1!=s3 || s2 != s3)begin//LABEL SENSORS
+        if (s2 != s3)begin
+            ENA=1;
+            ENB=1;
+            IN1=1;
+            IN4=1;
             state <= 4'b0100;
+
         end
 
-        else begin //LABEL SENSORS
+        else begin
+            ENA=0;
+            ENB=0;
+            IN1=0;
+            IN2=0;
+            IN3=0;
+            IN4=0;
             state <= 4'b0101;
         end
     end
 
     4'b0101: begin //move forward
         if(IR==0)begin 
+            ENA=1;
+            ENB=1;
+            IN1=1;
+            IN3=1;
             state <= 4'b0101;
         end
         if (IR==1)begin
+            ENA=0;
+            ENB=0;
+            IN1=0;
+            IN2=0;
+            IN3=0;
+            IN4=0;
             state <= 4'b0110;
         end
     end
 
     4'b0110: begin //STOP
+        ENA=0;
+        ENB=0;
+        IN1=0;
+        IN2=0;
+        IN3=0;
+        IN4=0;
         state <=4'b1000;
     end
 
     4'b0111: begin //SECOND TURN
         
-        if (s1!=s3 || s2 != s3)begin//LABEL SENSORS
+        if (s1!=s2)begin//LABEL SENSORS
+            ENA=1;
+            ENB=1;
+            IN1=1;
+            IN4=1;
             state <= 4'b0111;
         end
 
         else begin //LABEL SENSORS
+            ENA=0;
+            ENB=0;
+            IN1=0;
+            IN2=0;
+            IN3=0;
+            IN4=0;
             state <= 4'b1000;
         end
 
     end
 
     4'b1000: begin //STOP
-        
+        ENA=0;
+        ENB=0;
+        IN1=0;
+        IN2=0;
+        IN3=0;
+        IN4=0;
+
     end
 endcase
 
