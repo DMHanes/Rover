@@ -1,0 +1,133 @@
+module signal(clk, s1,s2,s3,IR,ENA,ENB,IN1,IN2,IN3,IN4);
+input clk,s1,s2,s3,IR;
+output reg ENA,ENB,IN1,IN2,IN3,IN4;
+
+initial begin //make sure everything is clear
+    ENA=1'b0;
+    ENB=1'b0;
+
+    IN1=0;
+    IN2=0;
+    IN3=0;
+    IN4=0;
+end
+
+reg [1:0] state=2'b00;
+
+always@(posedge clk)begin
+
+case (state)
+    2'b00: begin  //S0 only job is to transfer to correct next state
+        if (s1 > s2) begin
+            ENA=1;
+            ENB=1;
+            IN2=1;
+            IN4=1;
+            state <= 2'b01;
+            //output
+        end
+        else if (s1==s2)begin
+            ENA=0;
+            ENB=0;
+            IN1=0;
+            IN2=0;
+            IN3=0;
+            IN4=0;
+            state <= 2'b10;
+        end
+        else if (s2>s1) begin
+            ENA=1;
+            ENB=1;
+            IN1=1;
+            IN3=1;
+            state <= 2'b11;
+        end
+        end
+    2'b01: begin  //S1>S2
+        if (s1 > s2) begin
+            state <= 2'b01;
+            ENA=1;
+            ENB=1;
+            IN2=1;
+            IN4=1;
+            //output
+        end
+        else if (s1==s2)begin
+            ENA=0;
+            ENB=0;
+            IN1=0;
+            IN2=0;
+            IN3=0;
+            IN4=0;
+            state <= 2'b10;
+        end
+        else if (s2>s1) begin
+            ENA=1;
+            ENB=1;
+            IN1=1;
+            IN3=1;
+            state <= 2'b11;
+        end
+    end
+
+    2'b10: begin //S1=S2
+        if (s1 > s2) begin
+            ENA=1;
+            ENB=1;
+            IN2=1;
+            IN4=1;
+            state <= 2'b01;
+            //output
+        end
+        else if (s1==s2)begin
+            ENA=0;
+            ENB=0;
+            IN1=0;
+            IN2=0;
+            IN3=0;
+            IN4=0;
+            state <= 2'b10;
+        end
+        else if (s2>s1) begin
+            ENA=1;
+            ENB=1;
+            IN1=1;
+            IN3=1;
+            state <= 2'b11;
+        end
+    
+    end
+
+    2'b11: begin //S2>S1
+        if (s1 > s2) begin
+            ENA=1;
+            ENB=1;
+            IN2=1;
+            IN4=1;
+            state <= 2'b01;
+            //output
+        end
+        else if (s1==s2)begin
+            ENA=0;
+            ENB=0;
+            IN1=0;
+            IN2=0;
+            IN3=0;
+            IN4=0;
+            state <= 2'b10;
+        end
+        else if (s2>s1) begin
+            ENA=1;
+            ENB=1;
+            IN1=1;
+            IN3=1;
+            state <= 2'b11;
+        end
+
+    end
+
+endcase 
+
+end
+
+endmodule
