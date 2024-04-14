@@ -1,0 +1,183 @@
+
+//motor controller
+
+//go left, right or straight based on button input
+
+//SW7 SW6 SW7
+
+//decide    000
+
+//straight  001
+//right     010
+//right 2   011
+//left      100
+//left 2    101
+
+//turn      110
+//
+
+
+
+module movement(clk, SW7,SW6,SW5)
+
+input clk, SW7,SW6,SW5;
+
+input [2:0] dir;
+
+ENA=0;
+ENB=0;
+
+IN1=0;
+IN2=0;
+IN3=0;
+IN4=0;
+
+reg slow_clk;
+reg [28:0] count;
+
+wire slower_clk;
+
+initial begin
+    count = 0
+end
+
+always@(posedge clk) begin
+    if (count == 500000000) begin
+        slow_clk = 1;
+    end
+    else begin
+        slow_clk = 0
+        count = count + 1;
+    end
+end
+
+assign slower_clk = slow_clk;
+
+always@(posedge slower_clk)
+
+case(dir)
+
+//decide
+3'b000: begin
+    if (SW7==0 && SW6==0 && SW5==0) //ball straight ahead
+        state <= 3'b110; //turn immediately
+    else if (SW7==0 && SW6==0 && SW5==1)//ball to the right
+        state <= 3'b010;
+    else if (SW7==0 && SW6==1 && SW5==0)//ball to the right TWICE
+        state <= 3'b011;
+    else if (SW7==0 && SW6==1 && SW5==1)//ball to the left
+        state <= 3'b100;
+    else if (SW7==1 && SW6==0 && SW5==0)//ball to the left TWICE
+        state <= 3'b101;
+    else 
+        state <= 3'b000;
+end
+
+//straight
+3'b001: begin
+    //go straight
+    ENA=1;
+    ENB=1;
+    IN2=1;
+    IN4=1;
+    IN1=0;
+    IN3=0;
+    //stop
+    state <= 3'b111;
+end
+
+//ball to the right
+3'b010: begin
+    //go right
+    ENA=0;
+    ENB=0;
+    IN1=1;
+    IN2=0;
+    IN3=1;
+    IN4=0;
+    //turn
+    state <= 3'b110;
+end
+
+//ball to the right TWICE
+3'b011: begin
+    //go right TWICE
+    ENA=0;
+    ENB=0;
+    IN1=1;
+    IN2=0;
+    IN3=1;
+    IN4=0;
+    //turn
+    state <= 3'b110;
+end
+
+//ball to the left
+3'b100: begin
+    //go left
+    ENA=1;
+    ENB=1;
+    IN2=1;
+    IN4=1;
+    IN1=0;
+    IN3=0;
+    //turn
+    state <= 3'b110;
+end
+
+//ball to the left TWICE
+3'b101: begin
+    //go left TWICE
+    ENA=1;
+    ENB=1;
+    IN2=1;
+    IN4=1;
+    IN1=0;
+    IN3=0;
+    //turn
+    state <= 3'b110;
+end
+
+//turn
+3'b110: begin
+    //turn OUT
+    ENA=1;
+    ENB=1;
+    IN1=1;
+    IN4=1;
+    IN2=0;
+    IN3=0;
+
+    //go straight
+    state <= 3'b001;
+end
+
+//stop
+3'b111: begin
+    //stop code
+    ENA=0;
+    ENB=0;
+    IN1=0;
+    IN2=0;
+    IN3=0;
+    IN4=0;
+end
+
+endcase
+
+
+
+
+endmodule
+
+
+
+//scoop
+
+
+//drive 
+
+//shoot
+
+
+
