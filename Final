@@ -1,0 +1,441 @@
+
+`timescale 1ns / 1ps 
+
+module seven_seg( 
+
+    input clk, reset, //default 1 bit 
+
+    input SW2, // direction control switch 
+
+    input SW7, //turn 7-seg on/off 
+
+    //input overCurrentA , overCurrentB, //overcurrent voltage 
+
+    output a, b, c, d, e, f, g, dp, //the individual LED output for the seven segment along with the digital point 
+
+    output [3:0] an  //the 4 bit enable signal 
+
+); 
+
+ //dirF=SW2
+ //dirB=~SW2
+
+localparam N = 18;  //value 18 assigned to parameter N 
+
+reg [N-1:0]count; //the 18 bit counter which allows us to multiplex at 1000Hz; 2 MSB moves position 
+
+reg [6:0]sseg = 0; //the 7 bit register to hold the data to output 
+
+reg [3:0]an_temp = 4'b1110; //register for the 4 bit enable 
+
+reg overCurrentA=0, overCurrentB=0;
+ 
+
+//always @ (posedge clk or posedge reset) //rising edge of pulse; using the 100MHz clock to count; fills up counter for multiplexing 
+
+//  begin  
+
+//  if (reset) 
+
+//    count <= 0; 
+
+//  else 
+
+//   count <= count + 1; 
+
+// end 
+
+ 
+
+//always @ (posedge clk) 
+
+// begin 
+
+//  case(count[N-1:N-2]) //using only the 2 MSB's of the counter; 17 & 16 
+
+//   2'b00 :  //When the 2 MSB's are 00 enable the fourth display 
+
+//    begin 
+
+//     an_temp = 4'b1110; 
+
+//    end 
+
+    
+
+//   2'b01:  //When the 2 MSB's are 01 enable the third display 
+
+//    begin 
+
+//     an_temp = 4'b1101; 
+
+//    end 
+
+    
+
+//   2'b10:  //When the 2 MSB's are 10 enable the second display 
+
+//    begin 
+
+//     an_temp = 4'b1011; 
+
+//    end 
+
+     
+
+//   2'b11:  //When the 2 MSB's are 11 enable the first display 
+
+//    begin 
+
+//     an_temp = 4'b0111; 
+
+//    end 
+
+//  endcase 
+
+// end //manipulate the register and then assign to the output that it corresponds to  
+
+ 
+
+reg [6:0] sseg_temp; //7 bit register to hold the binary value of each input given 
+
+ 
+
+always @ (posedge clk) //anytime anything changes you have to do what is in the begin 
+
+ begin 
+
+  case(an_temp) 
+
+   4'b1110 : begin 
+        an_temp <= 4'b1101;
+
+        if(overCurrentA == 0 && SW7 == 1 || overCurrentB == 0 && SW7 == 1)  
+
+            sseg_temp = 7'b1000000; //to display 0 
+
+        else sseg_temp = 7'b1111111; 
+
+   end 
+
+   4'b1101 : begin 
+        an_temp <= 4'b1011;
+        
+        if(overCurrentA == 1 && SW7 == 1 || overCurrentB ==1 && SW7 ==1)  
+
+            sseg_temp = 7'b1111001; 
+
+        else sseg_temp = 7'b1111111; //to display 1 
+
+   end 
+
+   4'b1011 : begin  
+        an_temp <= 4'b0111;
+        
+        if(SW2 == 0 && SW7 == 1)  
+
+            sseg_temp = 7'b0000011; //to display b 
+
+        else sseg_temp = 7'b1111111; 
+
+   end 
+
+   4'b0111 : begin  
+        an_temp <= 4'b1110;
+
+        if (SW2 == 1 && SW7 == 1)  
+
+            sseg_temp = 7'b0001110; 
+
+        else sseg_temp = 7'b1111111; //to display f 
+
+   end 
+
+   //default : sseg_temp = 7'b1111111; //dash 
+
+  endcase 
+
+ end 
+
+  
+
+assign {g, f, e, d, c, b, a} = sseg_temp; //concatenate the outputs to the register, this is just a more neat way of doing this. 
+
+// I could have done in the case statement: 4'd0 : {g, f, e, d, c, b, a} = 7'b1000000;  
+
+// its the same thing.. write however you like it 
+
+assign dp = 1'b1; //since the decimal point is not needed, all 4 of them are turned off 
+
+assign an = an_temp; 
+
+ 
+
+endmodule 
+
+
+
+module PWM(clk,SW0,SW1,SW2,overCurrent,F); 
+
+    input clk,SW0,SW1,SW2,overCurrent;       
+    output F;
+    reg A=0;                                   
+    reg B=0;
+    
+    
+    always@(posedge clk)begin
+        A<=B;
+        B<=~A;    
+    
+    end
+
+    assign F = (SW0 & SW1 | SW1 & ~A | SW0 & ~A | SW0 &B) & ~overCurrent;      
+
+endmodule
+
+
+//motor controller
+
+//go left, right or straight based on button input
+
+//SW15 SW14 SW15
+
+//decide    000
+
+//straight  001
+//right     010
+//right 2   011
+//left      100
+//left 2    101
+
+//turn      110
+//
+
+
+
+module movement(clk, SW15,SW14,SW13,IN1,IN2,IN3,IN4,IPS1,IPS2);
+
+input clk,SW15,SW14,SW13,IPS1,IPS2;
+
+output reg IN1,IN2,IN3,IN4;
+
+reg [2:0] state;
+reg slow_clk;
+reg [28:0] count;
+
+wire slower_clk;
+
+initial begin
+    state=0;
+    IN1=0;
+    IN2=0;
+    IN3=0;
+    IN4=0;
+    count = 0;
+end
+
+always@(posedge clk) begin
+    if (count == 500000000) begin
+        slow_clk <= 1;
+        count<=0;
+    end
+    else begin
+        slow_clk <= 0;
+        count <= count + 1;
+    end
+end
+
+assign slower_clk = slow_clk;
+
+always@(posedge slower_clk)
+
+case(state)
+
+//decide
+4'b0000: begin
+    if (SW15==1 && SW14==1 && SW13==1) //ball straight ahead
+        state <= 3'b110; //turn immediately
+    else if (SW15==0 && SW14==0 && SW13==1)//ball to the right
+        state <= 3'b010;
+    else if (SW15==0 && SW14==1 && SW13==0)//ball to the right TWICE
+        state <= 3'b011;
+    else if (SW15==0 && SW14==1 && SW13==1)//ball to the left
+        state <= 3'b100;
+    else if (SW15==1 && SW14==0 && SW13==0)//ball to the left TWICE
+        state <= 3'b101;
+    else 
+        state <= 3'b000;
+end
+
+//straight
+4'b0001: begin
+    //go straight
+    IN2=0;
+    IN4=1;
+    IN1=1;
+    IN3=0;
+    //stop
+    state <= 3'b111;
+    
+    
+    if(IPS1==1 | IPS2==1 )
+        begin
+            state <= 4'b1111;
+        end
+end
+
+//ball to the right
+4'b0010: begin
+    //go right
+    IN1=1;
+    IN2=0;
+    IN3=0;
+    IN4=1;
+    //turn
+    state <= 3'b110;
+    
+     if(IPS1==1 | IPS2==1 )
+        begin
+            state <= 4'b1111;
+        end
+end
+
+//ball to the right TWICE
+4'b0011: begin
+    //go right TWICE
+    IN1=1;
+    IN2=0;
+    IN3=0;
+    IN4=1;
+    //turn
+    state <= 3'b110;
+    
+    if(IPS1==1 | IPS2==1 )
+        begin
+            state <= 4'b1111;
+        end
+end
+
+//ball to the left
+4'b0100: begin
+    //go left
+    IN2=1;
+    IN4=0;
+    IN1=0;
+    IN3=1;
+    //turn
+    state <= 3'b110;
+    
+    if(IPS1==1 | IPS2==1 )
+        begin
+            state <= 4'b1111;
+        end
+end
+
+//ball to the left TWICE
+4'b0101: begin
+    //go left TWICE
+    IN2=1;
+    IN4=0;
+    IN1=0;
+    IN3=1;
+    //turn
+    state <= 3'b110;
+    
+    if(IPS1==1 | IPS2==1 )
+        begin
+            state <= 4'b1111;
+        end
+end
+
+//turn
+4'b0110: begin
+    //turn OUT
+    IN1=1;
+    IN4=0;
+    IN2=0;
+    IN3=1;
+
+    //go straight
+    state <= 3'b001;
+    
+    if(IPS1==1 | IPS2==1 )
+        begin
+            state <= 4'b1111;
+        end
+end
+
+//stop
+4'b0111: begin
+    //stop code
+    IN1=0;
+    IN2=0;
+    IN3=0;
+    IN4=0;
+    
+    state <= 3'b000;
+    
+    if(IPS1==1 | IPS2==1 )
+        begin
+            state <= 4'b1111;
+        end
+end
+
+
+//metal boundary detected
+4'b1111: begin
+    IN1 = ~IN1;
+    IN2 = ~IN2;
+    IN3 = ~IN3;
+    IN4 = ~IN4;
+    
+    //go to shoot?
+
+end
+
+endcase
+
+
+
+
+endmodule
+
+
+
+//scoop
+
+
+//drive 
+
+//shoot
+
+
+
+
+
+module top(clk, SW0, SW1, SW2, SW3, SW4, SW5, ENA, ENB, IN1,IN2,IN3,IN4, SW7, a, b, c, d, e, f, g, dp, an, reset,SW13, SW14, SW15);
+    input clk, SW0, SW1, SW2, SW3, SW4, SW5, SW7, reset, SW13, SW14, SW15; //overCurrentA, overCurrentB, ;
+    output ENA, ENB, IN1, IN2, IN3, IN4, a, b, c, d, e, f, g, dp;
+    output [3:0] an;
+    
+    wire SLOW_CLK;
+    wire LED_CLK;
+
+    reg [16:0] SLOW_CLK_COUNTER = 0;
+    always @(posedge clk) begin
+        SLOW_CLK_COUNTER <= SLOW_CLK_COUNTER + 1;
+    end
+    assign SLOW_CLK = SLOW_CLK_COUNTER[8];
+    assign LED_CLK  = SLOW_CLK_COUNTER[15];
+
+    PWM PWMA(SLOW_CLK, SW1, SW0, SW5, overCurrentA, ENA);
+    PWM PWMB(SLOW_CLK, SW4, SW3, SW2, overCurrentB, ENB);
+
+    movement(clk, SW15,SW14,SW13,IN1,IN2,IN3,IN4);
+
+    seven_seg SEVEN_SEG(LED_CLK, reset, SW2, SW7, a, b, c, d, e, f, g, dp, an);
+    
+    
+endmodule
+
+ 
