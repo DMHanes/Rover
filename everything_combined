@@ -1,47 +1,6 @@
 `timescale 1ns / 1ps
 
 
-module defense(clk,IN1,IN2,IN3,IN4);
-  
-input clk,IN1,IN2,IN3,IN4;
-
-reg [1:0] state;
-reg [28:0] count;
-reg slower_clk;
-reg slow_clk;
-
-always@(posedge clk) begin
-    if (count == 500000000) begin
-        slow_clk = 1;
-    end
-    else begin
-        slow_clk = 0;
-        count = count + 1;
-    end
-    
-    
-assign slower_clk = slow_clk;
-
-always @(posedge slower_clk)
-    
-    case(state)
-    
-`
-    2'b00:begin
-    //go forwards
-    IN1=1;
-    IN2=0;
-    IN3=0;
-    IN4=1;
-    end
-    
-    2'b01: begin
-    //backwards
-    end
-
-    
-endmodule
-
 module Flip_Flop(clk,D,Q);
     input clk,D;
     output reg Q=0;
@@ -244,9 +203,9 @@ assign dp = 1'b1; //since the decimal point is not needed, all 4 of them are tur
 
 assign an = an_temp; 
 
- 
-
 endmodule 
+
+
 module PWM(clk,SW0,SW1,SW2,overCurrent,F,IPS1,IPS2,LED_1,LED_2); 
 
     input clk,SW0,SW1,SW2,overCurrent,IPS1,IPS2;       
@@ -268,13 +227,14 @@ module PWM(clk,SW0,SW1,SW2,overCurrent,F,IPS1,IPS2,LED_1,LED_2);
 
 endmodule
 
-module movement(clk,IN1,IN2,IN3,IN4,control);
+module movement(clk,IN1,IN2,IN3,IN4,control,SW8);
 
-input clk,control;
+input clk,control,SW8;
 
 output reg IN1,IN2,IN3,IN4;
 
 reg [2:0] state;
+reg [2:0] state1;
 reg slow_clk;
 reg [28:0] count;
 
@@ -292,7 +252,7 @@ end
 
 always@(posedge clk)
 
-case(state)//????????????????????????????????
+case(state)
 
 //decide
 4'b0000: begin
@@ -353,6 +313,39 @@ end
         state <= 4'b0011;
     
 end
+
+endcase
+
+always @(posedge clk) begin
+        if (count == 500000000) begin
+            slow_clk = 1;
+        end
+        else begin
+            slow_clk = 0;
+            count = count + 1;
+end
+    
+assign slower_clk = slow_clk;
+
+always @(posedge slower_clk & SW8==1)begin
+    
+    case(state1)
+   
+    2'b00:begin
+    //go forwards
+        IN1=1;
+        IN2=0;
+        IN3=0;
+        IN4=1;
+    end
+    
+    2'b01: begin
+    //backwards
+        IN1=0;
+        IN2=1;
+        IN3=1;
+        IN4=0;
+    end
 
 
 endcase
