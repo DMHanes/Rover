@@ -1,6 +1,47 @@
 `timescale 1ns / 1ps
 
 
+module defense(clk,IN1,IN2,IN3,IN4);
+  
+input clk,IN1,IN2,IN3,IN4;
+
+reg [1:0] state;
+reg [28:0] count;
+reg slower_clk;
+reg slow_clk;
+
+always@(posedge clk) begin
+    if (count == 500000000) begin
+        slow_clk = 1;
+    end
+    else begin
+        slow_clk = 0;
+        count = count + 1;
+    end
+    
+    
+assign slower_clk = slow_clk;
+
+always @(posedge slower_clk)
+    
+    case(state)
+    
+`
+    2'b00:begin
+    //go forwards
+    IN1=1;
+    IN2=0;
+    IN3=0;
+    IN4=1;
+    end
+    
+    2'b01: begin
+    //backwards
+    end
+
+    
+endmodule
+
 module Flip_Flop(clk,D,Q);
     input clk,D;
     output reg Q=0;
@@ -319,14 +360,14 @@ endcase
 endmodule
 
 
-module top(clk, SW0, SW1, SW2, SW3, SW4, SW5, ENA, ENB, IN1,IN2,IN3,IN4, SW7, a, b, c, d, e, f, g, dp, an, reset,SW13, SW14, SW15,
-        IPS1,IPS2,LED_1,LED_2,overCurrentA,overCurrentB,RightMic,LeftMic,RvL,control);
+module top(clk, SW0, SW1, SW2, SW3, SW4, SW5, ENA, ENB, IN1,IN2,IN3,IN4, SW7, a, b, c, d, e, f, g, dp, an, reset,SW13, SW14, SW15, IPS1,IPS2,LED_1,LED_2,overCurrentA,overCurrentB,RightMic,LeftMic,control);
     input clk, SW0, SW1, SW2, SW3, SW4, SW5, SW7, reset, SW13, SW14, SW15,IPS1,IPS2, overCurrentA, overCurrentB,RightMic,LeftMic,control;
     output ENA, ENB, IN1, IN2, IN3, IN4, LED_1,LED_2, a, b, c, d, e, f, g, dp;
     output [3:0] an;
     
     wire SLOW_CLK;
     wire LED_CLK;
+    wire RvL;
 
     reg [16:0] SLOW_CLK_COUNTER = 0;
     always @(posedge clk) begin
