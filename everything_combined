@@ -13,7 +13,29 @@ endmodule
 // The 2nd FF is set with the output of the 1st Q1 and the clk from the basys 2 board to sync the 
 // input of the signals to the board to avoid timing issues with the FFs
 
+module mic2(input clk,RightMic,LeftMic, output RvL);
+    reg Neg_RMic = 0, Neg_LMic=0, Pos_RMic, Pos_LMic;
+    wire Q1,L,R;
+    wire RvL;
 
+    // posegde and negedge the clock to work around not being able to update
+    // the always block anytime the clk changes naturally
+    always@(posedge clk) begin
+        Pos_RMic=RightMic;
+        Pos_LMic=LeftMic;
+    end
+    always@(negedge clk) begin
+        Neg_RMic=RightMic;
+        Neg_LMic=LeftMic;
+    end
+    assign L = Pos_LMic|Neg_LMic;
+    assign R = Pos_RMic|Neg_RMic;
+    
+    Flip_Flop S0(L,R,Q1);
+    Flip_Flop S1(clk,Q1,RvL);
+    
+endmodule
+    
 module seven_seg( 
 
     input clk, reset, //default 1 bit 
@@ -229,7 +251,7 @@ end
 
 always@(posedge clk)
 
-case(control)//????????????????????????????????
+case(state)//????????????????????????????????
 
 //decide
 4'b0000: begin
@@ -246,7 +268,7 @@ end
 
    IN1=0;
    IN2=1;
-   IN3=0
+   IN3=0;
    IN4=1;
     
     if (control==0) //L
@@ -298,8 +320,8 @@ endmodule
 
 
 module top(clk, SW0, SW1, SW2, SW3, SW4, SW5, ENA, ENB, IN1,IN2,IN3,IN4, SW7, a, b, c, d, e, f, g, dp, an, reset,SW13, SW14, SW15,
-        IPS1,IPS2,LED_1,LED_2,overCurrentA,overCurrentB,RightMic,LeftMic,RvL);
-    input clk, SW0, SW1, SW2, SW3, SW4, SW5, SW7, reset, SW13, SW14, SW15,IPS1,IPS2, overCurrentA, overCurrentB,RightMic,LeftMic;
+        IPS1,IPS2,LED_1,LED_2,overCurrentA,overCurrentB,RightMic,LeftMic,RvL,control);
+    input clk, SW0, SW1, SW2, SW3, SW4, SW5, SW7, reset, SW13, SW14, SW15,IPS1,IPS2, overCurrentA, overCurrentB,RightMic,LeftMic,control;
     output ENA, ENB, IN1, IN2, IN3, IN4, LED_1,LED_2, a, b, c, d, e, f, g, dp;
     output [3:0] an;
     
@@ -312,32 +334,13 @@ module top(clk, SW0, SW1, SW2, SW3, SW4, SW5, ENA, ENB, IN1,IN2,IN3,IN4, SW7, a,
     end
     assign SLOW_CLK = SLOW_CLK_COUNTER[8];
     assign LED_CLK  = SLOW_CLK_COUNTER[15];
-    
-    reg Neg_RMic = 0, Neg_LMic=0, Pos_RMic, Pos_LMic;
-    wire Q1,L,R;
-    wire RvL;
-
-    // posegde and negedge the clock to work around not being able to update
-    // the always block anytime the clk changes naturally
-    always@(posedge clk) begin
-        Pos_RMic=RightMic;
-        Pos_LMic=LeftMic;
-    end
-    always@(negedge clk) begin
-        Neg_RMic=RightMic;
-        Neg_LMic=LeftMic;
-    end
-    assign L = Pos_LMic|Neg_LMic;
-    assign R = Pos_RMic|Neg_RMic;
-    
    
-    Flip_Flop S0(L,R,Q1);
-    Flip_Flop S1(clk,Q1,RvL);
+ 
 
     PWM PWMA(SLOW_CLK, SW1, SW0, SW5, overCurrentA, ENA,IPS1,IPS2,LED_1,LED_2);
     PWM PWMB(SLOW_CLK, SW4, SW3, SW2, overCurrentB, ENB,IPS1,IPS2,LED_1,LED_2);
 
-    movement(clk, SW15,SW14,SW13,IN1,IN2,IN3,IN4);
+    movement MOVE(clk,IN1,IN2,IN3,IN4,RvL);
 
     seven_seg SEVEN_SEG(LED_CLK, reset, SW2, SW7, a, b, c, d, e, f, g, dp, an);
     
