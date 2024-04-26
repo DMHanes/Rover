@@ -1,7 +1,6 @@
 `timescale 1ns / 1ps
 
 
-
 module Flip_Flop(clk,D,Q);
     input clk,D;
     output reg Q=0;
@@ -206,25 +205,9 @@ module PWM(clk,SW0,SW1,SW2,overCurrent,F,IPS1,IPS2,LED_1,LED_2);
 
 endmodule
 
-module movement(clk, SW15,SW14,SW13,IN1,IN2,IN3,IN4);
-//motor controller
+module movement(clk,IN1,IN2,IN3,IN4,control);
 
-//go left, right or straight based on button input
-
-//SW15 SW14 SW15
-
-//decide    000
-
-//straight  001
-//right     010
-//right 2   011
-//left      100
-//left 2    101
-
-//turn      110
-//
-
-input clk,SW15,SW14,SW13;
+input clk,control;
 
 output reg IN1,IN2,IN3,IN4;
 
@@ -243,160 +226,81 @@ initial begin
     count = 0;
 end
 
-always@(posedge clk) begin
-    if (count == 100000000) begin
-        slow_clk <= 1;
-        count<=0;
-    end
-    else begin
-        slow_clk <= 0;
-        count <= count + 1;
-    end
-end
 
-assign slower_clk = slow_clk;
+always@(posedge clk)
 
-always@(posedge slower_clk)
-
-case(state)
+case(control)//????????????????????????????????
 
 //decide
 4'b0000: begin
-    if (SW15==1 && SW14==1 && SW13==1) //ball straight ahead
-        state <= 3'b110; //turn immediately
-    else if (SW15==0 && SW14==0 && SW13==1)//ball to the right
-        state <= 3'b010;
-    else if (SW15==0 && SW14==1 && SW13==0)//ball to the right TWICE
-        state <= 3'b011;
-    else if (SW15==0 && SW14==1 && SW13==1)//ball to the left
-        state <= 3'b100;
-    else if (SW15==1 && SW14==0 && SW13==0)//ball to the left TWICE
-        state <= 3'b101;
-    else 
-        state <= 3'b000;
+    if (control==0) //L
+        state <= 4'b0001; //L state
+    else if (control == 1 )//R
+        state <= 4'b0010;
+    else
+        state <= 4'b0011;
 end
 
-//straight
+//L state
 4'b0001: begin
-    //go straight
-    IN2=0;
-    IN4=1;
-    IN1=1;
-    IN3=0;
-    //stop
-    state <= 3'b111;
+
+   IN1=0;
+   IN2=1;
+   IN3=0
+   IN4=1;
+    
+    if (control==0) //L
+        state <= 4'b0001; //L state
+    else if (control == 1 )//R
+        state <= 4'b0010;
+    else
+        state <= 4'b0011;
     
 end
 
-//ball to the right
+//R state
 4'b0010: begin
-    //go right
-    IN1=1;
-    IN2=0;
-    IN3=0;
-    IN4=1;
-    //turn
-    state <= 3'b110;
+
+   IN1=1;
+   IN2=0;
+   IN3=1;
+   IN4=0;
+    
+    if (control==0) //L
+        state <= 4'b0001; //L state
+    else if (control == 1 )//R
+        state <= 4'b0010;
+    else
+        state <= 4'b0011;
+end
+
+//straight default case
+4'b00111: begin
+
+   IN1=1;
+   IN2=0;
+   IN3=0;
+   IN4=1;
+    
+    if (control==0) //L
+        state <= 4'b0001; //L state
+    else if (control == 1 )//R
+        state <= 4'b0010;
+    else
+        state <= 4'b0011;
     
 end
 
-//ball to the right TWICE
-4'b0011: begin
-    //go right TWICE
-    IN1=1;
-    IN2=0;
-    IN3=0;
-    IN4=1;
-    //turn
-    state <= 3'b110;
-    
-end
-
-//ball to the left
-4'b0100: begin
-    //go left
-    IN2=1;
-    IN4=0;
-    IN1=0;
-    IN3=1;
-    //turn
-    state <= 3'b110;
-    
-end
-
-//ball to the left TWICE
-4'b0101: begin
-    //go left TWICE
-    IN2=1;
-    IN4=0;
-    IN1=0;
-    IN3=1;
-    //turn
-    state <= 3'b110;
-    
-end
-
-//turn
-4'b0110: begin
-    //turn OUT
-    IN1=1;
-    IN4=0;
-    IN2=0;
-    IN3=1;
-
-    //go straight
-    state <= 3'b001;
-    
-end
-
-//stop
-4'b0111: begin
-    //stop code
-    IN1=0;
-    IN2=0;
-    IN3=0;
-    IN4=0;
-    
-    state <= 3'b000;
-    
-end
-
-
-//metal boundary detected
-4'b1111: begin
-    IN1 = ~IN1;
-    IN2 = ~IN2;
-    IN3 = ~IN3;
-    IN4 = ~IN4;
-    
-    //go to shoot?
-
-end
 
 endcase
-
-
-
 
 endmodule
 
 
-
-//scoop
-
-
-//drive 
-
-//shoot
-
-
-
-
-
 module top(clk, SW0, SW1, SW2, SW3, SW4, SW5, ENA, ENB, IN1,IN2,IN3,IN4, SW7, a, b, c, d, e, f, g, dp, an, reset,SW13, SW14, SW15,
-        IPS1,IPS2,LED_1,LED_2, overCurrentA,overCurrentB,RightMic,LeftMic,RvL);
+        IPS1,IPS2,LED_1,LED_2,overCurrentA,overCurrentB,RightMic,LeftMic,RvL);
     input clk, SW0, SW1, SW2, SW3, SW4, SW5, SW7, reset, SW13, SW14, SW15,IPS1,IPS2, overCurrentA, overCurrentB,RightMic,LeftMic;
-    output ENA, ENB, IN1, IN2, IN3, IN4, LED_1,LED_2, a, b, c, d, e, f, g, dp,RvL;
+    output ENA, ENB, IN1, IN2, IN3, IN4, LED_1,LED_2, a, b, c, d, e, f, g, dp;
     output [3:0] an;
     
     wire SLOW_CLK;
@@ -411,6 +315,7 @@ module top(clk, SW0, SW1, SW2, SW3, SW4, SW5, ENA, ENB, IN1,IN2,IN3,IN4, SW7, a,
     
     reg Neg_RMic = 0, Neg_LMic=0, Pos_RMic, Pos_LMic;
     wire Q1,L,R;
+    wire RvL;
 
     // posegde and negedge the clock to work around not being able to update
     // the always block anytime the clk changes naturally
@@ -425,8 +330,7 @@ module top(clk, SW0, SW1, SW2, SW3, SW4, SW5, ENA, ENB, IN1,IN2,IN3,IN4, SW7, a,
     assign L = Pos_LMic|Neg_LMic;
     assign R = Pos_RMic|Neg_RMic;
     
-    
-    
+   
     Flip_Flop S0(L,R,Q1);
     Flip_Flop S1(clk,Q1,RvL);
 
